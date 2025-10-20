@@ -59,6 +59,7 @@ export const UserAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
     try {
       const { data } = await supabase.auth.getSession();
       const sessionExists = !!data.session;
+      const userId = data.session?.user?.id ?? null;
 
       if (sessionExists) {
         await supabase.auth.signOut();
@@ -76,7 +77,12 @@ export const UserAuthProvider: React.FC<{ children: ReactNode }> = ({ children }
       localStorage.removeItem("rememberMe");
 
       // Zustand 상태 초기화 
-      useLikeStore.setState({ likedMembers: {} });
+      if (userId) {
+        useLikeStore.getState().reset(userId);
+      } else {
+        // 유저 ID가 없으면 메모리만 최소 초기화
+        useLikeStore.setState({ likedMembers: {} });
+      }
 
     } catch (error) {
       console.error("Supabase 로그아웃 실패:", error);
