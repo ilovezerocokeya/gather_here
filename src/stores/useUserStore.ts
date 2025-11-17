@@ -26,6 +26,8 @@ interface UserStore {
   setBackgroundImageUrl: (url: string) => void; // 배경 이미지 URL 설정
   incrementImageVersion: () => void; // imageVersion 증가 (캐시 무효화)
   resetImageState: () => void; // 이미지 관련 상태 초기화
+  isHydrating: boolean; // hydrateUser 중복 방지용 플래그
+  resetUserState: () => void; // 전체 유저 상태 초기화
 }
 
 export const useUserStore = create<UserStore>((set, get) => ({
@@ -42,6 +44,9 @@ export const useUserStore = create<UserStore>((set, get) => ({
    // 토글 초기값 및 제어 함수 추가
    toggle: false,
    setToggle: (val) => set({ toggle: val }),
+
+  // hydrateUser 중복 방지용 상태
+  isHydrating: false,
 
   // Supabase에서 사용자 데이터를 불러와 전역 상태에 저장
   fetchUserData: async (userId: string) => {
@@ -113,7 +118,8 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
   // 현재 로그인된 유저 기준으로 userData 초기화
   hydrateUser: async () => {
-    set({ loading: true, error: null });
+    if (get().isHydrating) return;
+    set({ isHydrating: true, loading: true, error: null });
   
     try {
       const { data, error } = await supabase.auth.getUser();
@@ -132,7 +138,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
       console.error("[hydrateUser] 실패:", message);
       set({ error: message, userData: null });
     } finally {
-      set({ loading: false, hydrated: true });
+      set({ loading: false, hydrated: true, isHydrating: false });
     }
   },
 
@@ -153,4 +159,17 @@ export const useUserStore = create<UserStore>((set, get) => ({
       backgroundImageUrl: null,
       imageVersion: 0,
     }),
+
+  // 세션 전환/로그아웃 시 전체 유저 상태 초기화
+  resetUserState: () => set({
+    userData: null,
+    loading: false,
+    error: null,
+    hydrated: true,
+    isHydrating: false,
+    profileImageUrl: null,
+    backgroundImageUrl: null,
+    imageVersion: 0,
+    toggle: false
+  }),
 }));

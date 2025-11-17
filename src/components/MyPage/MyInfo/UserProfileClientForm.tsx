@@ -78,50 +78,59 @@ const extractFormData = (form: HTMLFormElement) => {
     // 제출 시 updateProfile
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-    
+
       // form 요소에서 현재 입력된 값들 추출
       const { nickname, jobTitle, experience } = extractFormData(e.currentTarget);
-  
+
       startTransition(() => {
-        // Supabase에 사용자 프로필 정보 업데이트 요청
-        updateProfile({
-          nickname,
-          jobTitle,
-          experience,
-          profileImageUrl: state.updatedImageUrl ?? userData?.profile_image_url ?? "", // 새 이미지가 있으면 사용, 없으면 기존 이미지 유지
-        })
-          .then(async () => {
-            // 최신 사용자 데이터 재요청 → 전역 상태 업데이트
-            const { fetchUserData, userData } = useUserStore.getState();
-            if (userData?.user_id) await fetchUserData(userData.user_id);
-    
-            // reducer에 저장된 초기 상태도 새 값으로 갱신
-            dispatch({
-              type: "UPDATE_INITIAL_DATA",
-              payload: {
-                email: state.localInitialData.email, // 이메일은 변경되지 않음
-                nickname,
-                jobTitle,
-                experience,
-                profileImageUrl: state.updatedImageUrl ?? userData?.profile_image_url ?? "",
-              },
-            });
-     
-            dispatch({ type: "SET_CHANGED", payload: false });
-            dispatch({ type: "SET_NICKNAME", payload: nickname });
-            dispatch({ type: "SET_IMAGE_URL", payload: null });
-            dispatch({ type: "TOGGLE_SAVE_MODAL", payload: true });  
-            showToast("프로필이 저장되었습니다." , "success");
-          })
-          .catch((error) => {
-            console.error("업로드 실패:", error);
-            showToast(
-              error instanceof Error
-                ? `에러: ${error.message}`
-                : "예상치 못한 오류가 발생했습니다.",
-              "error"
-            );
+        (async () => {
+          const res = await updateProfile({
+            nickname,
+            jobTitle,
+            experience,
+            profileImageUrl: state.updatedImageUrl ?? userData?.profile_image_url ?? "",
           });
+
+         if (!res || res.error) {
+           const errorMessage =
+             res?.error ?? "서버 요청 중 문제가 발생했습니다.";
+           showToast(errorMessage, "error");
+           return;
+         }
+
+          const { fetchUserData, userData: current } = useUserStore.getState();
+          if (current?.user_id) {
+            await fetchUserData(current.user_id);
+          }
+
+          router.refresh();
+
+          dispatch({
+            type: "UPDATE_INITIAL_DATA",
+            payload: {
+              email: state.localInitialData.email,
+              nickname,
+              jobTitle,
+              experience,
+              profileImageUrl: state.updatedImageUrl ?? (current?.profile_image_url ?? ""),
+            },
+          });
+
+          dispatch({ type: "SET_CHANGED", payload: false });
+          dispatch({ type: "SET_NICKNAME", payload: nickname });
+          dispatch({ type: "SET_IMAGE_URL", payload: null });
+          dispatch({ type: "TOGGLE_SAVE_MODAL", payload: true });
+
+          showToast("프로필이 저장되었습니다.", "success");
+        })().catch((error) => {
+          console.error("업데이트 실패:", error);
+          showToast(
+            error instanceof Error
+              ? `에러: ${error.message}`
+              : "예상치 못한 오류가 발생했습니다.",
+            "error"
+          );
+        });
       });
     };
   

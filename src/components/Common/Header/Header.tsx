@@ -16,7 +16,7 @@ import SearchBar from '@/components/Search/SearchBar';
 
 const Header: React.FC = () => {
   const { user, resetAuthUser } = useAuth();
-  const { userData } = useUserStore();
+  const { userData , resetUserState} = useUserStore();
   const [isMypageModalOpen, setIsMypageModalOpen] = useState(false);
   const modalRef = useRef<SearchModalRef>(null);
   const isMobile = useMediaQuery("(max-width: 1024px)");
@@ -32,16 +32,17 @@ const Header: React.FC = () => {
       if (error) throw new Error(error.message);
     } catch (err) {
       if (err instanceof Error) {
-        console.error('로그아웃 중 오류:', err.message);
+        console.error("로그아웃 중 오류:", err.message);
       } else {
-        console.error('알 수 없는 오류 발생:', err);
+        console.error("알 수 없는 오류 발생:", err);
       }
     } finally {
       void resetAuthUser(); // 사용자 상태 초기화
-      router.push('/');
+      resetUserState();     // 전역 유저/이미지 상태 초기화
+      router.push("/");
       showToast("로그아웃 되었습니다.", "success");
+    }
   };
-}
 
   const toggleMypageModal = () => setIsMypageModalOpen(prev => !prev);
 

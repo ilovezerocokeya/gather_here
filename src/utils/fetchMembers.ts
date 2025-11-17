@@ -4,7 +4,7 @@ import type { FetchMembersResponse, MemberType } from "@/lib/gatherHub";
 // 환경 변수 검증
 const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}/api`;
 if (!BASE_URL) {
-  throw new Error("환경 변수 NEXT_PUBLIC_API_URL이 설정되지 않았습니다.");
+  throw new Error("환경 변수 NEXT_PUBLIC_BASE_URL이 설정되지 않았습니다.");
 }
 
 // 멤버 데이터를 서버에서 가져오는 함수

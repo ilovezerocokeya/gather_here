@@ -17,6 +17,7 @@ const ProfileImage: React.FC<ProfileImageProps> = ({ onImageChange }) => {
     profileImageUrl,
     imageVersion,
   } = useUserStore();
+  const { setProfileImageUrl, incrementImageVersion } = useUserStore.getState();
 
   const { showToast } = useToastStore();
 
@@ -40,7 +41,9 @@ const ProfileImage: React.FC<ProfileImageProps> = ({ onImageChange }) => {
 
     if (uploadedUrl) {
       const cleanUrl = stripQuery(uploadedUrl);
-      onImageChange?.(cleanUrl);
+      onImageChange?.(cleanUrl);            // 폼 로컬 상태 반영
+      setProfileImageUrl(cleanUrl);         // 전역 상태 즉시 반영
+      incrementImageVersion();              // 캐시 무효화 버전 증가
     }
   };
 
@@ -55,7 +58,9 @@ const ProfileImage: React.FC<ProfileImageProps> = ({ onImageChange }) => {
     }
   
     await resetImage();
-    onImageChange?.(DEFAULT_PROFILE_IMAGE);
+    onImageChange?.(DEFAULT_PROFILE_IMAGE);      // 폼 로컬 상태 반영
+    setProfileImageUrl(DEFAULT_PROFILE_IMAGE);   // 전역 상태 반영
+    incrementImageVersion();                     // 캐시 무효화 버전 증가
   };
 
 

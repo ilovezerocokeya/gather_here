@@ -22,23 +22,29 @@ const getJobTitleClass = (job_title: string) => {
 
 const LeftNav = () => {
   const { user } = useAuth(); 
-  const { userData, loading, profileImageUrl, imageVersion, fetchUserData } = useUserStore();
+  const { userData, loading, isHydrating, hydrated, profileImageUrl, imageVersion, fetchUserData, hydrateUser } = useUserStore();
   const pathname = usePathname();
   const profileImage = `${secureImageUrl(profileImageUrl ?? defaultImage)}?v=${imageVersion}`; // 프로필 이미지에 캐시 무효화를 위한 버전 쿼리 추가
 
+  useEffect(() => {
+    if (!hydrated) {
+      void hydrateUser();
+    }
+  }, [hydrated, hydrateUser]);
+
   // user가 존재할 경우 전역 유저 데이터 패칭
   useEffect(() => {
-    if (user?.id) {
+    if (hydrated && user?.id && userData?.user_id !== user.id) {
       void fetchUserData(user.id);
     }
-  }, [user, fetchUserData]);
+  }, [hydrated, user, userData?.user_id, fetchUserData]);
 
   const jobTitleClass = userData?.job_title ? getJobTitleClass(userData.job_title) : "";
 
   return (
     <aside className="sticky top-0 p-6 s:p-0 w-[250px] max-h-[540px] flex flex-col items-start gap-3 rounded-[20px] bg-fillStrong text-fontWhite shadow-sm s:hidden">
       {/* 유저 정보 로딩 중이면 스켈레톤 표시 */}
-      {loading ? (
+      {(isHydrating || !hydrated || loading) ? (
         <LeftNavLoader />
       ) : userData ? (
         <>
